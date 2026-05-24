@@ -1,0 +1,43 @@
+name: MA-ATRIX News Collector
+
+on:
+  schedule:
+    # 毎日 JST 10:00 に実行（UTC 01:00）
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    # GitHub UI から手動実行も可能
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write   # data/articles.csv をコミット・プッシュするために必要
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run collector
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python collector.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/articles.csv
+          # 差分がない場合（新規記事ゼロ）はコミットをスキップ
+          git diff --cached --quiet || git commit -m "chore: collect articles $(date -u '+%Y-%m-%d')"
+          git push
