@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import feedparser
-import google.generativeai as genai
+from google import genai
 
 # ─────────────────────────────────────────────────────
 # 設定
@@ -153,7 +153,7 @@ def fetch_articles(feed: dict) -> list[dict]:
 # ─────────────────────────────────────────────────────
 # Gemini による MA-ATRIX 分類
 # ─────────────────────────────────────────────────────
-def classify_article(model, article: dict) -> dict | None:
+def classify_article(client, article: dict) -> dict | None:
     """Gemini 1.5 Flash でMA-ATRIX評価軸・レベルを判定する"""
     prompt = CLASSIFY_PROMPT.format(
         title=article["title"],
@@ -161,7 +161,10 @@ def classify_article(model, article: dict) -> dict | None:
     )
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+        )
         raw = response.text.strip()
         raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
         return json.loads(raw)
@@ -224,8 +227,7 @@ def append_row(article: dict, result: dict) -> None:
 def main():
     print(f"=== MA-ATRIX Collector 開始: {datetime.now().isoformat()} ===\n")
 
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
     existing_ids = load_existing_ids()
     print(f"既存蓄積記事数: {len(existing_ids)} 件\n")
@@ -241,7 +243,7 @@ def main():
         for article in new_articles:
             print(f"  ▶ {article['title'][:55]}...")
 
-            result = classify_article(model, article)
+            result = classify_article(client, article)
 
             if result is None:
                 print("    → 分類失敗、スキップ")
