@@ -20,7 +20,7 @@ from google import genai
 # ─────────────────────────────────────────────────────
 # 設定
 # ─────────────────────────────────────────────────────
-GEMINI_API_KEY      = os.environ["GEMINI_API_KEY"]
+GEMINI_API_KEY      = os.environ.get("GEMINI_API_KEY", "")
 CSV_PATH            = Path("data/articles.csv")
 MAX_PER_FEED        = 50   # 1フィードあたりの最大処理件数（Gemini無償枠対策）
 GEMINI_INTERVAL_SEC = 4.5  # 無償枠: 15RPM ≒ 4秒以上の間隔が必要
@@ -226,6 +226,12 @@ def append_row(article: dict, result: dict) -> None:
 # ─────────────────────────────────────────────────────
 def main():
     print(f"=== MA-ATRIX Collector 開始: {datetime.now().isoformat()} ===\n")
+
+    if not GEMINI_API_KEY:
+        raise RuntimeError(
+            "GEMINI_API_KEY が設定されていません。"
+            "GitHub Secrets に GEMINI_API_KEY を登録してください。"
+        )
 
     client = genai.Client(api_key=GEMINI_API_KEY)
 
