@@ -210,6 +210,9 @@ def append_row(article: dict, result: dict) -> None:
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     write_header = not CSV_PATH.exists()
+    # BOM はファイル新規作成時のみ付与。追記時に utf-8-sig を使うとファイル中間に
+    # BOM が挿入されて壊れるため、追記は通常 utf-8 を使う。
+    encoding = "utf-8-sig" if write_header else "utf-8"
     axes = result.get("axes", {})
     row = {
         "記事ID":               article["id"],
@@ -231,7 +234,7 @@ def append_row(article: dict, result: dict) -> None:
         "判定根拠":              result.get("reasoning", ""),
     }
 
-    with CSV_PATH.open("a", encoding="utf-8-sig", newline="") as f:
+    with CSV_PATH.open("a", encoding=encoding, newline="") as f:
         writer = csv.DictWriter(f, fieldnames=HEADERS)
         if write_header:
             writer.writeheader()
