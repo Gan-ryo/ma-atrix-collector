@@ -23,7 +23,7 @@ from google import genai
 GEMINI_API_KEY      = os.environ.get("GEMINI_API_KEY", "")
 CSV_PATH            = Path("data/articles.csv")
 MAX_PER_FEED        = 50   # 1フィードあたりの最大処理件数（Gemini無償枠対策）
-GEMINI_INTERVAL_SEC = 4.5  # 無償枠: 15RPM ≒ 4秒以上の間隔が必要
+GEMINI_INTERVAL_SEC = 7.0  # 無償枠: gemini-2.5-flash は10RPM ≒ 7秒以上の間隔が必要
 RSS_USER_AGENT      = (
     "Mozilla/5.0 (compatible; MA-ATRIX-Collector/1.0; "
     "+https://github.com/Gan-ryo/ma-atrix-collector)"
