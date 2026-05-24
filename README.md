@@ -98,7 +98,7 @@ GitHub の「Actions」タブ → 「MA-ATRIX News Collector」→「Run workflo
 
 ## カスタマイズ
 
-- **収集頻度の変更**: `collect.yml` の `cron` を編集
+- **収集頻度の変更**: `.github/workflows/collect.yml` の `cron` を編集
 - **最大処理件数の変更**: `collector.py` の `MAX_PER_FEED`（デフォルト: 50）を変更
 - **キーワード追加**: `collector.py` の `AI_KEYWORDS` リストに追加
 - **フィード追加**: `collector.py` の `RSS_FEEDS` リストに追加
