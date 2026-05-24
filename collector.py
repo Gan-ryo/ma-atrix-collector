@@ -200,7 +200,7 @@ def load_existing_ids() -> set[str]:
     """既に蓄積済みの記事IDセットを返す（重複防止）"""
     if not CSV_PATH.exists():
         return set()
-    with CSV_PATH.open(encoding="utf-8", newline="") as f:
+    with CSV_PATH.open(encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         return {row["記事ID"] for row in reader}
 
@@ -231,7 +231,7 @@ def append_row(article: dict, result: dict) -> None:
         "判定根拠":              result.get("reasoning", ""),
     }
 
-    with CSV_PATH.open("a", encoding="utf-8", newline="") as f:
+    with CSV_PATH.open("a", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=HEADERS)
         if write_header:
             writer.writeheader()
