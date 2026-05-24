@@ -124,6 +124,16 @@ def fetch_articles(feed: dict) -> list[dict]:
     print(f"  フィード取得中: {feed['url']}")
     parsed = feedparser.parse(feed["url"])
 
+    # 診断情報
+    status = getattr(parsed, "status", "N/A")
+    total  = len(parsed.entries)
+    print(f"  HTTPステータス: {status} / 取得エントリ数: {total} 件")
+    if parsed.bozo:
+        print(f"  [WARN] フィード解析エラー: {parsed.bozo_exception}")
+    if total == 0:
+        print(f"  [WARN] エントリが0件のため処理をスキップします")
+        return []
+
     articles = []
     for entry in parsed.entries:
         title   = entry.get("title", "")
