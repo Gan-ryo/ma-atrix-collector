@@ -35,11 +35,11 @@ RSS_USER_AGENT      = (
 RSS_FEEDS = [
     {
         "source": "PR TIMES",
-        "url":    "https://prtimes.jp/rss.php",
+        "url":    "https://prtimes.jp/index.rdf",  # 旧: rss.php は404のため変更
     },
     {
-        "source": "BusinessWire",
-        "url":    "https://feed.businesswire.com/rss/home/?rss=G1&label=richtextfile&topicid=AI",
+        "source": "PR Newswire",
+        "url":    "https://www.prnewswire.com/rss/news-releases-list.rss",  # 旧: BusinessWire AI feedは廃止
     },
 ]
 
