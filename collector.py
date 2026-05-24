@@ -24,6 +24,10 @@ GEMINI_API_KEY      = os.environ.get("GEMINI_API_KEY", "")
 CSV_PATH            = Path("data/articles.csv")
 MAX_PER_FEED        = 50   # 1フィードあたりの最大処理件数（Gemini無償枠対策）
 GEMINI_INTERVAL_SEC = 4.5  # 無償枠: 15RPM ≒ 4秒以上の間隔が必要
+RSS_USER_AGENT      = (
+    "Mozilla/5.0 (compatible; MA-ATRIX-Collector/1.0; "
+    "+https://github.com/Gan-ryo/ma-atrix-collector)"
+)
 
 # ─────────────────────────────────────────────────────
 # RSSフィード定義
@@ -122,7 +126,10 @@ CLASSIFY_PROMPT = """\
 def fetch_articles(feed: dict) -> list[dict]:
     """RSSフィードからAI関連記事を取得・フィルタする"""
     print(f"  フィード取得中: {feed['url']}")
-    parsed = feedparser.parse(feed["url"])
+    parsed = feedparser.parse(
+        feed["url"],
+        request_headers={"User-Agent": RSS_USER_AGENT},
+    )
 
     # 診断情報
     status = getattr(parsed, "status", "N/A")
