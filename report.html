@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MA-ATRIX 記事集計レポート</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background: #f0f2f5;
+  color: #1a1a2e;
+  padding: 24px;
+  scroll-behavior: smooth;
+}
+h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+.meta { font-size: 0.8rem; color: #666; margin-bottom: 20px; }
+
+/* ── 集計表 ── */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  overflow-x: auto;
+  padding: 20px;
+  margin-bottom: 32px;
+}
+table { border-collapse: collapse; width: 100%; min-width: 700px; }
+th, td {
+  border: 1px solid #dee2e6;
+  text-align: center;
+  padding: 10px 8px;
+  font-size: 0.85rem;
+}
+.level-header {
+  background: #1a1a2e; color: #fff; font-weight: 600;
+  white-space: nowrap; text-align: left; padding-left: 12px; width: 110px;
+}
+.axis-header {
+  background: #2d2d5e; color: #fff; font-weight: 600;
+  font-size: 0.78rem; vertical-align: bottom; padding: 10px 6px;
+}
+.axis-short { display: none; }
+.data-cell { padding: 0; }
+.cell-link {
+  display: block; width: 100%; padding: 10px 8px;
+  font-size: 1.1rem; font-weight: 700; color: #1a1a2e;
+  text-decoration: none; transition: background 0.15s;
+}
+.cell-link:hover { background: rgba(74,108,247,0.15); color: #4a6cf7; }
+.zero { color: #ccc; font-size: 0.9rem; }
+.total-cell { background: #f1f3f9; font-weight: 700; color: #2d2d5e; }
+th.total-cell { background: #2d2d5e; color: #fff; }
+
+/* ── 記事詳細セクション ── */
+.detail-section {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  scroll-margin-top: 16px;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.section-label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tag-level {
+  background: #1a1a2e; color: #fff;
+  font-size: 0.78rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+}
+.tag-axis {
+  background: #eef0ff; color: #2d2d5e;
+  font-size: 0.82rem; font-weight: 600;
+  padding: 3px 10px; border-radius: 999px;
+}
+.tag-count {
+  background: #f0f2f5; color: #666;
+  font-size: 0.78rem;
+  padding: 3px 8px; border-radius: 999px;
+}
+.back-link {
+  font-size: 0.78rem; color: #888; text-decoration: none;
+}
+.back-link:hover { color: #4a6cf7; }
+.article-card {
+  border: 1px solid #e8eaf0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+.article-card:last-child { margin-bottom: 0; }
+.article-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+.article-title a { color: #1a1a2e; text-decoration: none; }
+.article-title a:hover { text-decoration: underline; color: #4a6cf7; }
+.article-meta { font-size: 0.75rem; color: #888; margin-bottom: 6px; }
+.article-reasoning {
+  font-size: 0.8rem; color: #444;
+  background: #f8f9ff;
+  border-left: 3px solid #4a6cf7;
+  padding: 6px 10px;
+  border-radius: 0 4px 4px 0;
+}
+
+@media (max-width: 640px) {
+  .axis-full { display: none; }
+  .axis-short { display: inline; }
+  .level-header { font-size: 0.72rem; width: 72px; }
+}
+</style>
+</head>
+<body id="top">
+
+<h1>MA-ATRIX 記事集計レポート</h1>
+<p class="meta">集計対象: 83 件 ／ 生成日時: 2026-05-26 13:54 UTC</p>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th class="level-header" style="background:#2d2d5e">レベル \ 評価軸</th>
+        <th class="axis-header"><span class="axis-full">組織</span><span class="axis-short">組織</span></th><th class="axis-header"><span class="axis-full">制度・仕組み</span><span class="axis-short">制度</span></th><th class="axis-header"><span class="axis-full">コンプライアンス</span><span class="axis-short">コンプラ</span></th><th class="axis-header"><span class="axis-full">生成AI活用対象の業務プロセス</span><span class="axis-short">業務PRS</span></th><th class="axis-header"><span class="axis-full">データマネジメント</span><span class="axis-short">データ</span></th><th class="axis-header"><span class="axis-full">生成AI活用</span><span class="axis-short">AI活用</span></th><th class="axis-header"><span class="axis-full">生成AIの業務プロセスへの統合</span><span class="axis-short">業務統合</span></th>
+        <th class="total-cell" style="background:#1a1a2e;color:#fff">合計</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th class="level-header">Lv0 未実施</th><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td class="total-cell">0</td></tr>
+<tr><th class="level-header">Lv1 属人的</th><td style="background:rgb(210,225,255)" class="data-cell"><a class="cell-link" href="#s1-0">3</a></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:rgb(240,245,255)" class="data-cell"><a class="cell-link" href="#s1-3">1</a></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:rgb(240,245,255)" class="data-cell"><a class="cell-link" href="#s1-5">1</a></td><td style="background:rgb(225,235,255)" class="data-cell"><a class="cell-link" href="#s1-6">2</a></td><td class="total-cell">7</td></tr>
+<tr><th class="level-header">Lv2 明文化</th><td style="background:rgb(195,215,255)" class="data-cell"><a class="cell-link" href="#s2-0">4</a></td><td style="background:rgb(195,215,255)" class="data-cell"><a class="cell-link" href="#s2-1">4</a></td><td style="background:rgb(225,235,255)" class="data-cell"><a class="cell-link" href="#s2-2">2</a></td><td style="background:rgb(210,225,255)" class="data-cell"><a class="cell-link" href="#s2-3">3</a></td><td style="background:rgb(225,235,255)" class="data-cell"><a class="cell-link" href="#s2-4">2</a></td><td style="background:rgb(75,135,255)" class="data-cell"><a class="cell-link" href="#s2-5">12</a></td><td style="background:rgb(165,195,255)" class="data-cell"><a class="cell-link" href="#s2-6">6</a></td><td class="total-cell">33</td></tr>
+<tr><th class="level-header">Lv3 標準化</th><td style="background:rgb(225,235,255)" class="data-cell"><a class="cell-link" href="#s3-0">2</a></td><td style="background:rgb(210,225,255)" class="data-cell"><a class="cell-link" href="#s3-1">3</a></td><td style="background:rgb(150,185,255)" class="data-cell"><a class="cell-link" href="#s3-2">7</a></td><td style="background:rgb(165,195,255)" class="data-cell"><a class="cell-link" href="#s3-3">6</a></td><td style="background:rgb(195,215,255)" class="data-cell"><a class="cell-link" href="#s3-4">4</a></td><td style="background:rgb(165,195,255)" class="data-cell"><a class="cell-link" href="#s3-5">6</a></td><td style="background:rgb(105,155,255)" class="data-cell"><a class="cell-link" href="#s3-6">10</a></td><td class="total-cell">38</td></tr>
+<tr><th class="level-header">Lv4 定量管理</th><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:rgb(225,235,255)" class="data-cell"><a class="cell-link" href="#s4-5">2</a></td><td style="background:rgb(225,235,255)" class="data-cell"><a class="cell-link" href="#s4-6">2</a></td><td class="total-cell">4</td></tr>
+<tr><th class="level-header">Lv5 最適化</th><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td style="background:#f5f6f8" class="data-cell"><span class="zero">—</span></td><td class="total-cell">0</td></tr>
+
+      <tr>
+        <th class="level-header">合計</th>
+        <td class="total-cell">9</td><td class="total-cell">7</td><td class="total-cell">9</td><td class="total-cell">10</td><td class="total-cell">6</td><td class="total-cell">21</td><td class="total-cell">20</td>
+        <td class="total-cell">83</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+  <section class="detail-section" id="s1-0">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv1 属人的</span>
+        <span class="tag-axis">組織</span>
+        <span class="tag-count">3 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000002078.000006428.html" target="_blank" rel="noopener">freee、「シャドーAI」の急速な普及に伴い情シス担当者を対象とした「シャドーAI」と「シャドーIT」の比較に関する調査結果を公開</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ freee、フリー株式会社</div>
+          <div class="article-reasoning">シャドーAIの普及を調査するも、組織全体での管理体制は属人的・場当たり的。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000834.000049627.html" target="_blank" rel="noopener">Sansan ビジネスAIをテーマとした新TVCMを5月25日より放映開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ Sansan株式会社</div>
+          <div class="article-reasoning">CM放映はAI活用への関心を高める試みだが、具体的な体制や制度への言及はない。組織の意識醸成初期段階と判断。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000005.000085627.html" target="_blank" rel="noopener">ブランディング会社 crack代表・大野陣が「国内有数の生成AIプラットフォーム」GUGAの主催する委員会で講演</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-22 ／ crack株式会社</div>
+          <div class="article-reasoning">生成AIプラットフォームGUGAの委員会講演。生成AI関連の取り組みについて属人的・初期段階の活動を報告している段階。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s1-3">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv1 属人的</span>
+        <span class="tag-axis">生成AI活用対象の業務プロセス</span>
+        <span class="tag-count">1 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/us-corporations-hemorrhage-1-9-trillion-annually-industrial-veteran-exposes-discretionary-effort-deficit-as-root-cause-of-margin-compression-302781857.html" target="_blank" rel="noopener">U.S. Corporations Hemorrhage $1.9 Trillion Annually: Industrial Veteran Exposes "Discretionary Effort Deficit" as Root Cause of Margin Compression</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma</div>
+          <div class="article-reasoning">生産性向上の課題提示だが、生成AI導入の具体的取組は不明。属人的な段階。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s1-5">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv1 属人的</span>
+        <span class="tag-axis">生成AI活用</span>
+        <span class="tag-count">1 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000014.000056872.html" target="_blank" rel="noopener">室内カビの発生リスクを予測する、AIを活用した「パーソナライズ・カビ予報システム」の共同研究を開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ ハーツリッチ株式会社、慶應義塾大学</div>
+          <div class="article-reasoning">AIを活用したシステム開発の研究開始であり、AI活用の第一歩が示されているため。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s1-6">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv1 属人的</span>
+        <span class="tag-axis">生成AIの業務プロセスへの統合</span>
+        <span class="tag-count">2 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000365.000008738.html" target="_blank" rel="noopener">AIは日本のテック人材の役割を再定義 ― 奪うのは「仕事」ではなく「タスク」― ヘイズ『テック・タレント・エクスプローラー』＆調査結果を公開</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ ヘイズ・ジャパン</div>
+          <div class="article-reasoning">AIがタスクを奪い、人材の役割を再定義するという、生成AIの業務プロセスへの統合による影響を把握・分析しているため。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000146.000001332.html" target="_blank" rel="noopener">【“Copilot疲れ”はなぜ起きる？】Microsoft MVPが「AIを最高の社員に変える方法」を7/29解説</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社イプロス</div>
+          <div class="article-reasoning">"Copilot疲れ"という現場の課題提示。AIツール導入後の使いこなし・定着が属人的・場当たり的な状態を指摘。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s2-0">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv2 明文化</span>
+        <span class="tag-axis">組織</span>
+        <span class="tag-count">4 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000056.000088876.html" target="_blank" rel="noopener">AIサーバー国内生産及びAIインフラ供給体制構築の現状に関するお知らせ</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ スターシーズ株式会社</div>
+          <div class="article-reasoning">AIインフラ供給体制構築の発表。基本方針と体制整備段階。国内生産体制構築により組織的コミットメント見られるが、運用実績は未確認。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000028.000151917.html" target="_blank" rel="noopener">【各会場20名限定】生成AI導入の「現場のリアル」をきれいごとなしで語り尽くす。サイバーコムが交流会付き実践セミナーを福岡・名古屋で開催</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ サイバーコム株式会社</div>
+          <div class="article-reasoning">生成AI導入の実践的な情報共有セミナー開催による認識醸成。組織レベルでの導入検討を促す取り組みだが、各社の具体的導入は記事範囲外。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/constructor-group-choisit-singapour-pour-y-installer-son-nouveau-siege-mondial-dia-et-dinformatique-quantique-et-creer-plus-de-200-postes-hautement-qualifies-302781846.html" target="_blank" rel="noopener">Constructor Group choisit Singapour pour y installer son nouveau siège mondial d'IA et d'informatique quantique et créer plus de 200 postes hautement qualifiés</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma ／ Constructor Group</div>
+          <div class="article-reasoning">生成AI・量子コンピューティング拠点をシンガポールに設置する戦略的決定。経営層による明文化されたAI重視戦略の表れ。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000129.000038525.html" target="_blank" rel="noopener">『AI駆動開発チームの作り方・育て方』重版決定</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社グラファー</div>
+          <div class="article-reasoning">AI駆動開発チーム構築に関する書籍重版。組織戦略・人材育成の枠組み明文化段階</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s2-1">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv2 明文化</span>
+        <span class="tag-axis">制度・仕組み</span>
+        <span class="tag-count">4 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000138.000137731.html" target="_blank" rel="noopener">Uravation、「AIに引用・推薦される企業」を目指す法人向けAIEO研修を提供。自社メディアでAI検索流入35%を実証</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ 株式会社Uravation</div>
+          <div class="article-reasoning">法人向け研修の提供は、企業がAI活用推進のための教育プログラムという「制度・仕組み」構築を支援するため。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000100.000048768.html" target="_blank" rel="noopener">「生成AIの品質保証サービス」を標準化するガイドライン策定</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ 株式会社ベリサーブ</div>
+          <div class="article-reasoning">「生成AIの品質保証サービス」に関する社内ガイドラインを策定し、基本方針を明文化する取り組み。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000171.000052583.html" target="_blank" rel="noopener">人材育成・社員研修の「アルー」人事担当者向け無料オンラインセミナー開催スケジュールのお知らせ　シニア社員のモチベーション支援や、AIによる研修成果の可視化をテーマに開催</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ アルー株式会社</div>
+          <div class="article-reasoning">人事研修におけるAI活用の啓発セミナー開催。AIによる研修成果可視化の取り組み紹介だが、組織全体での制度化は未成熟。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/ai-ready-ohio-expands-to-accelerate-ai-education-and-training-statewide-302781343.html" target="_blank" rel="noopener">'AI Ready Ohio' Expands To Accelerate AI Education and Training Statewide</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma ／ JobsOhio、Enterprise Technology Association</div>
+          <div class="article-reasoning">AI教育・訓練プログラムの体系的な展開を発表。複数機関の連携により、基本方針に基づいた教育枠組みが構築されている段階。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s2-2">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv2 明文化</span>
+        <span class="tag-axis">コンプライアンス</span>
+        <span class="tag-count">2 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000074.000137550.html" target="_blank" rel="noopener">Netskope、Google Cloud TPUを活用したAI Guardrailsソリューションを発表</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ Netskope、Netskope Japan株式会社</div>
+          <div class="article-reasoning">AIワークフローのガバナンス・ガードレール機能をGoogle TPUで提供。AI利用時のコンプライアンス・セキュリティ対応の基本手順を整備。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000086.000051317.html" target="_blank" rel="noopener">セキュリティ内製化の最大の障壁を突破。本番環境の多要素認証サイトも専門知識不要で診断可能に</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社エーアイセキュリティラボ</div>
+          <div class="article-reasoning">AIを活用したセキュリティ診断ツール「AeyeScan」により、本番環境での脆弱性診断を自動化。セキュリティコンプライアンスの業務プロセス標準化を実現している。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s2-3">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv2 明文化</span>
+        <span class="tag-axis">生成AI活用対象の業務プロセス</span>
+        <span class="tag-count">3 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000056.000133764.html" target="_blank" rel="noopener">【2026年最新版】食品EC業務、AI新時代で何が変わるか知ってますか。初級～上級まで使える実践プロンプト10選を無料公開</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社GOAT</div>
+          <div class="article-reasoning">食品EC業務へのAI活用事例。実践的なプロンプト提供で業務プロセス手順化段階。組織的取り組みは初期段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000692.000058538.html" target="_blank" rel="noopener">アスエネ、AIサステナビリティプラットフォームのデモ動画を公開</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ アスエネ株式会社</div>
+          <div class="article-reasoning">サステナビリティ対応業務を対象とするAIプラットフォーム提供。機能紹介段階で、顧客での運用成熟度は不明</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000067.000106830.html" target="_blank" rel="noopener">Notta、「ITreview The Best Software in Japan 2026」にて「生成AI部門」および「文字起こしソフト部門」をダブル受賞！</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ Notta株式会社、アイティクラウド株式会社</div>
+          <div class="article-reasoning">文字起こし・議事録作成業務向けAI搭載ツール。業界評価受賞段階で、顧客の導入・運用体系化は初期段階</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s2-4">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv2 明文化</span>
+        <span class="tag-axis">データマネジメント</span>
+        <span class="tag-count">2 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000013.000162177.html" target="_blank" rel="noopener">WD顧客調査、AIインフラ計画において拡張性・経済性・信頼性への注目が高まっていることを明らかに</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ ウエスタンデジタル</div>
+          <div class="article-reasoning">AIインフラにおけるデータストレージ要件管理の重要性認識と、拡張性・経済性・信頼性への注目が基本方針の検討段階を示すため。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000216.000031981.html" target="_blank" rel="noopener">縦型動画広告のCV、約6件に1件が不正判定。AI最適化広告運用の盲点、“無効CVによる学習データ汚染”に注意</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ 株式会社Spider Labs</div>
+          <div class="article-reasoning">「無効CVによる学習データ汚染」がAI最適化広告運用の「盲点」とされ、データ品質管理に課題がある。問題が特定された段階であり、レベル2と判断。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s2-5">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv2 明文化</span>
+        <span class="tag-axis">生成AI活用</span>
+        <span class="tag-count">12 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000137.000137731.html" target="_blank" rel="noopener">Uravation主催「AIツール使い分け講座」開催。受講後満足度100%、9割が『自社業務で使える場面が見えた』と回答</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ 株式会社Uravation</div>
+          <div class="article-reasoning">主要な生成AIツールの使い分けに関する体系的な講座を実施し、受講者のモデル選定・運用スキル向上に寄与したため。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000004.000146293.html" target="_blank" rel="noopener">【先着50名限定】賃貸不動産エージェント「指名型」の部屋探しプラットフォーム『ちんたくん』がサービス提供を開始！</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社Avec</div>
+          <div class="article-reasoning">AIエージェントを活用した不動産仲介業務プロセスの自動化が始まった段階。基本方針の明文化と初期導入は確認できるが、全社標準化には至っていない。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000001.000178231.html" target="_blank" rel="noopener">訪問看護専用AIアシスタント「KanGO」提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社TomoaZ</div>
+          <div class="article-reasoning">医療現場向けAIアシスタントの提供開始。訪問看護業務サポートツール化が進行中。規制業界のため初期的なコンプライアンス対応も見られるが、運用体制は発展途上。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000018.000171947.html" target="_blank" rel="noopener">【6/10(水) 無料ウェビナー】ブラックボックス化した基幹システム刷新のまず最初に始めること ─ Claude Codeで読み解くAIリバースエンジニアリング</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ AICE株式会社</div>
+          <div class="article-reasoning">Claude Codeを用いた基幹システムリバースエンジニアリング支援。LLMを活用した業務プロセス最適化の初期段階。導入事例紹介に留まる。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000055.000125456.html" target="_blank" rel="noopener">NE、ネクストエンジンAPIマニュアルを全面刷新。AIエージェントが参照しやすい開発ドキュメントへ</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ NE株式会社</div>
+          <div class="article-reasoning">APIマニュアルをAIエージェント向けに刷新し、開発ドキュメントの標準化を進める。生成AI運用の基盤整備段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000003.000183247.html" target="_blank" rel="noopener">声で聞ける、画面が動く。- Webサイト向け AI 接客エージェント『AI Navigator』を Adevia が提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社Adevia</div>
+          <div class="article-reasoning">Webサイト向けAI接客エージェント『AI Navigator』の提供開始。生成AIモデルの選定・運用が基本的に実施されている段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/connect-trade-launches-developer-portal-built-for-the-ai-coding-era-302781824.html" target="_blank" rel="noopener">Connect Trade Launches Developer Portal Built for the AI Coding Era</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma ／ Connect Trade</div>
+          <div class="article-reasoning">開発者ポータルをAIコーディング時代向けに構築。基本的なAI機能提供だが、体系的な運用段階は初期的です。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000616.000038104.html" target="_blank" rel="noopener">【5/30(土)開催】決算後初のリアル登壇：ZETA代表の山崎が個人投資家向けIRセミナー「神戸投資勉強会」へ登壇～最新決算および生成AI時代の成長戦略とエージェンティックコマースの展望を徹底解説～</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ ZETA株式会社</div>
+          <div class="article-reasoning">ZETA CXシリーズという生成AIソリューションを提供し、顧客体験向上が明文化された方針として示されている。事業戦略レベルでの位置づけが確認できる。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000121.000070822.html" target="_blank" rel="noopener">Google AIモードも認めた“検索創出”とは。「ギルティ炭酸」にも共通する、検索を意図的に創るマーケティングをPIVOTで解説</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社キーワードマーケティング、株式会社ベクトル</div>
+          <div class="article-reasoning">Google AI検索と連携した検索創出マーケティング戦略を提示。生成AI活用の手法を標準化・基本方針化し始めた段階</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000049.000043451.html" target="_blank" rel="noopener">小売店舗の万引きロス削減を「成果」で証明。AI導入時費用0円の「成功報酬型プラン」を提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ アースアイズ株式会社</div>
+          <div class="article-reasoning">AI防犯システムの導入を成功報酬型で標準化。基本的な運用体制と評価方法が明文化されている。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000065.000120780.html" target="_blank" rel="noopener">aiESG、ESG体験型カードゲーム「Chain Impact Sandwich」を2026年6月より提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社aiESG、九州大学</div>
+          <div class="article-reasoning">ESG分析の基本手順を明文化し、体験型ツールとして一定の標準化を実現している段階</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000072.000014049.html" target="_blank" rel="noopener">株式会社AmbiRise、自治体・公共機関向け電子請求サービス「Haratte」、生成AI-OCRを活用した請求書自動入力補助機能を提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ グラビス株式会社、株式会社AmbiRise</div>
+          <div class="article-reasoning">生成AI-OCR技術を請求書処理に実装。業務プロセス標準化の初期段階で、基本的な機能提供レベル。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s2-6">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv2 明文化</span>
+        <span class="tag-axis">生成AIの業務プロセスへの統合</span>
+        <span class="tag-count">6 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000221.000041581.html" target="_blank" rel="noopener">【登壇決定】AI検索で変わるリード獲得の常識。SEOを探求する９社が集結する「次世代SEO Summit」で、EXIDEAが「ブランドSEO戦略」を解説</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社EXIDEA、ブルースクレイ・ジャパン株式会社</div>
+          <div class="article-reasoning">AI検索の進展に対応した新しいSEO・リード獲得戦略を展開。生成AI時代のビジネスプロセス統合の基本方針段階</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/odyss-launches-global-co-creator-program-defining-the-future-of-ai-powered-dietary-management-302781751.html" target="_blank" rel="noopener">ODYSS Launches Global Co-Creator Program, Defining the Future of AI-Powered Dietary Management</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma ／ ODYSS</div>
+          <div class="article-reasoning">AI駆動の食事管理プロダクトの利用者プログラム実施。ユーザー協創を通じた業務プロセス統合の初期段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/odyss-launches-global-co-creator-program-defining-the-future-of-ai-powered-dietary-management-302781768.html" target="_blank" rel="noopener">ODYSS Launches Global Co-Creator Program, Defining the Future of AI-Powered Dietary Management</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma ／ ODYSS</div>
+          <div class="article-reasoning">AI駆動型食事管理プラットフォームのコ・クリエイタープログラム開始。ユーザー参加による製品開発の方針が明文化されている。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000025.000071705.html" target="_blank" rel="noopener">自治体窓口の申請書作成を対話型AIで支援「ゆびナビぷらす」で対話型AIエージェントの実証実験を開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社ＢＳＮアイネット</div>
+          <div class="article-reasoning">自治体窓口申請書作成に対話型AIエージェントを導入する実証実験を開始。業務プロセス統合の初期段階で基本方針が確立された段階</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000003.000181625.html" target="_blank" rel="noopener">全国初(*1)のインクルーシブ教育型教室「くまプリ教室」を宮崎市に開校</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社同立有志会ホールディングス</div>
+          <div class="article-reasoning">AI教材「くまプリ」を導入した教室開校。個別最適化学習への統合だが、展開初期段階の基本実装。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000059.000079152.html" target="_blank" rel="noopener">A.T. カーニー株式会社、VARIETASの「AI面接官」を導入。戦略コンサルで問われる「ケース面接」をAI化</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社VARIETAS、A.T. カーニー株式会社</div>
+          <div class="article-reasoning">AI面接官を採用プロセスに導入。ケース面接の自動化だが、基本方針明文化・実装段階の初期化。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s3-0">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv3 標準化</span>
+        <span class="tag-axis">組織</span>
+        <span class="tag-count">2 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000387.000002454.html" target="_blank" rel="noopener">ギブリー、Claude Code全社導入に向けた「AIネイティブカンパニー変革支援プログラム」を提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社ギブリー</div>
+          <div class="article-reasoning">全社的なAIネイティブカンパニー変革支援により、組織文化変革と体系的な導入推進を実施。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000310.000038674.html" target="_blank" rel="noopener">【SIGNATE】金融庁「生成AIを活用した地域金融機関におけるDX化に向けた実証研究事業」に参画</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社SIGNATE、金融庁</div>
+          <div class="article-reasoning">金融庁主導の実証研究事業に参画。国家的な生成AI活用推進体制に組織的に統合されている。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s3-1">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv3 標準化</span>
+        <span class="tag-axis">制度・仕組み</span>
+        <span class="tag-count">3 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000057.000079152.html" target="_blank" rel="noopener">VARIETAS、大手企業らと「EU AI法」を見据えた採用AI実務ガイドライン策定へ。「AI HR安全利用検討ワーキンググループ」を発足</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/24 ／ 株式会社VARIETAS</div>
+          <div class="article-reasoning">複数企業が「EU AI法」を見据え「採用AI実務ガイドライン」を共同策定する取り組みであり、AI活用の制度・仕組みとコンプライアンスの標準化を目指す。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000011.000177612.html" target="_blank" rel="noopener">みずほFG、現場主導のAI開発を全社展開へ 金融機関基準のガバナンスを備えたAI開発基盤「Dify Enterprise」を構築</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ 株式会社みずほフィナンシャルグループ</div>
+          <div class="article-reasoning">現場主導のAI開発基盤構築と金融機関基準のガバナンス整備により、全社展開を目指す体制を標準化・体系化している。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000017.000178737.html" target="_blank" rel="noopener">2026年版「AI研修サービス カオスマップ」を公開、法人研修からAI駆動開発研修まで整理</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ AI駆動開発協会</div>
+          <div class="article-reasoning">AI研修サービスの体系的な分類・整理。法人研修からAI駆動開発研修まで、組織的な教育プログラムの制度化・標準化を支援。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s3-2">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv3 標準化</span>
+        <span class="tag-axis">コンプライアンス</span>
+        <span class="tag-count">7 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000284.000016795.html" target="_blank" rel="noopener">シンカ・Xpotential・オーウェンの3社が連携し、改正保険業法を踏まえた保険募集モニタリング業務を支援</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社シンカ、株式会社Xpotential、オーウェン</div>
+          <div class="article-reasoning">改正保険業法対応のAI監視システム。規制要件を満たした標準化された保険募集モニタリング業務を実現。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000214.000008525.html" target="_blank" rel="noopener">香川県警察およびソフトバンクと「犯罪被害防止に関する協定」を締結</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ BBSS株式会社、香川県警察、ソフトバンク株式会社</div>
+          <div class="article-reasoning">犯罪被害防止に関する協定締結により、AI倫理・法令遵守が全社的に標準化・体系化された段階にある。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000022.000089968.html" target="_blank" rel="noopener">Senda-Argus: AI Agent / MCP時代の「実行証跡レイヤ」構想を発表</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社RainForest</div>
+          <div class="article-reasoning">AIの実行内容を証跡化・監査する基盤を構想。AIエージェント時代のコンプライアンス・ガバナンス強化を目指した標準化された仕組みの構築。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000303.000053624.html" target="_blank" rel="noopener">KnowBe4、AIネイティブな攻撃シミュレーション＆トレーニング製品および新たなAIエージェントを発表</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-23 ／ KnowBe4</div>
+          <div class="article-reasoning">セキュリティとAI倫理を重視したAIエージェント製品開発。デジタルワークフォースセキュリティを標準化・体系化した実装アプローチ。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000003.000182721.html" target="_blank" rel="noopener">Claude Mythosが示すAI時代のサイバーリスクに、日本発の数学的対抗技術-GhostDrift、ADICサイバーアシュアランス拡張のLean形式証明を公開</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社GhostDrift数理研究所</div>
+          <div class="article-reasoning">AIセキュリティリスク対応として数学的証明技術を導入・公開。セキュリティ対策の標準化・体系化段階</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/crew-scaler-releases-landmark-agentic-ai-security-study-for-multi-agent-systems-302781841.html" target="_blank" rel="noopener">Crew Scaler Releases Landmark Agentic AI Security Study for Multi-Agent Systems</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma ／ Crew Scaler</div>
+          <div class="article-reasoning">マルチエージェントAI システムのセキュリティ分析を実施。生成AI倫理とリスク管理に関する体系的研究で、業界標準化への取り組みを示している。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000078.000138218.html" target="_blank" rel="noopener">生成AIサービス「Stella AI for Biz」が「デジタル化・AI導入補助金2026」の対象ITツールに認定</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社SUPERNOVA</div>
+          <div class="article-reasoning">政府補助金対象認定を受けており、法令・制度に基づいた体系的な生成AIサービス提供体制を構築している</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s3-3">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv3 標準化</span>
+        <span class="tag-axis">生成AI活用対象の業務プロセス</span>
+        <span class="tag-count">6 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000276.000033008.html" target="_blank" rel="noopener">アドウェイズ、マンガ広告における「どの作品を広告塔にすべきか」をAIで予測する「MALOOKレコメンド」の運用を開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ 株式会社アドウェイズ</div>
+          <div class="article-reasoning">マンガ広告プロモーションにおける「広告塔選定」という業務プロセスをAIで標準化・効率化しているため。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000583.000067590.html" target="_blank" rel="noopener">【日立市と日立製作所による共創プロジェクト】日立市で約7万人の健康データの集約・分析と、健康アプリを活用したAI分析実証の結果に基づき、新たな健康施策を推進</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ 株式会社日立製作所</div>
+          <div class="article-reasoning">健康データ集約・分析とAI活用による健康施策推進は、業務プロセス定義・標準化・品質管理が進んでいることを示唆します。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000052.000061059.html" target="_blank" rel="noopener">5/26（火）12:00～AIでスカウトの「質」は落ちない？ データが証明する「工数半減・反応率2倍」を実現するハイブリッド運用術！</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ 株式会社Delight</div>
+          <div class="article-reasoning">スカウト業務プロセスを定義し、AIとのハイブリッド運用で成果を定量化。業務統合に着目している。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000019.000149500.html" target="_blank" rel="noopener">SIGQ、プラス、SAMURAI ARCHITECTSと共同で「AI事業開発勉強会」を開催</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社SIGQ、プラス株式会社、株式会社SAMURAI ARCHITECTS</div>
+          <div class="article-reasoning">インシデント管理業務に特化したAgentic AI。特定業務プロセスの標準化・体系化を実現する生成AI活用事例。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000128.000092212.html" target="_blank" rel="noopener">ハンディ端末キッティング業務へのAIエージェント活用に向けた実証実験を開始 ～生成AIと精緻な手順書の連携で工数50%削減を達成、自律的なエラー検知・自動化の実現を目指す～</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ オーエムネットワーク株式会社</div>
+          <div class="article-reasoning">端末キッティング業務プロセスの標準化と精緻な手順書に基づくAIエージェント実装で、工数50%削減を達成。業務プロセスの標準化と自動化が進展。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000199.000089286.html" target="_blank" rel="noopener">キンドリル、エージェンティックAIを活用した、ITサービス高度化ソリューションを日本で提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ キンドリルジャパン株式会社</div>
+          <div class="article-reasoning">ITインフラの設計・構築・運用・保守業務を対象にエージェンティックAIを活用。顧客向けソリューション提供だが、組織内での体系的実装は限定的</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s3-4">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv3 標準化</span>
+        <span class="tag-axis">データマネジメント</span>
+        <span class="tag-count">4 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000179.000042324.html" target="_blank" rel="noopener">【日立市と日立製作所による共創プロジェクト】日立市で約7万人の健康データの集約・分析と、健康アプリを活用したAI分析実証の結果に基づき、新たな健康施策を推進</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ 株式会社日立システムズ</div>
+          <div class="article-reasoning">健康データ集約・分析とアプリ活用実証で、データ収集・品質・アクセス性・管理体制の強化が中心。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000475.000089626.html" target="_blank" rel="noopener">HRテックは個別最適から全体最適へ。jinjerが挑む「人事データ×AI」革命を議論するPIVOTを公開</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ jinjer株式会社</div>
+          <div class="article-reasoning">人事データとAIの統合を標準化・体系化。個別最適から全体最適への転換により、データ活用が体系化された段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://www.prnewswire.com/news-releases/neurophet-launches-joint-study-with-vhir-on-neurophet-aqua-ms-accelerating-ai-algorithm-validation-302778771.html" target="_blank" rel="noopener">Neurophet Launches Joint Study with VHIR on 'Neurophet AQUA MS', Accelerating AI Algorithm Validation</a>
+          </div>
+          <div class="article-meta">PR Newswire ／ Tue, 26 Ma ／ Neurophet、VHIR</div>
+          <div class="article-reasoning">多施設間脳MRIデータセットを活用した医療AI開発。大規模なデータセット構築と臨床試験での検証体制が構築されている。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000021.000066509.html" target="_blank" rel="noopener">人材紹介特化AI「MENDAN」、決定データを蓄積し精度が継続向上する「マッチングエージェント」サービスアップデート</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ Zen office inc.</div>
+          <div class="article-reasoning">決定データを蓄積して継続的に精度向上させるマッチングエージェント。データ駆動的な改善サイクルが構築されている。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s3-5">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv3 標準化</span>
+        <span class="tag-axis">生成AI活用</span>
+        <span class="tag-count">6 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000008.000079237.html" target="_blank" rel="noopener">「侵入は防げない」時代の新たなサイバーセキュリティ対策。侵入後の被害拡大をAIが防ぐ「ランサムウェア対策サービス」の提供を開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/21 ／ インクレイブ株式会社</div>
+          <div class="article-reasoning">AIによるランサムウェア侵入後の被害拡大防止サービス提供開始。LLM活用によるAIモデル選定、運用、監視が示唆される。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000085.000165816.html" target="_blank" rel="noopener">リユースPCのリングロー、社内問い合わせ対応をAI化。Copilot Studio活用の「Ringrow総合窓口」を導入</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ リングロー株式会社、Microsoft</div>
+          <div class="article-reasoning">Copilot Studioによる社内問い合わせ対応AI導入は、AI活用レベル3に該当。組織・制度・プロセスも整備段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000026.000100145.html" target="_blank" rel="noopener">PCIソリューションズ「Voice AI Agent 導入支援サービス for Amazon Connect 」を提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ PCIソリューションズ株式会社、アマゾン ウェブ サービス</div>
+          <div class="article-reasoning">Amazon Connectと生成AIを連携させるサービス提供は、生成AI活用（モデル選定、運用）のレベル3に該当する。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000135.000080381.html" target="_blank" rel="noopener">【無料ウェビナー】AIを使えない会社から利益が消える。初回商談前に受注が決まる！？ Claude Codeを活用した個別提案資料作成術を公開</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社給与アップ研究所、株式会社B-Roca</div>
+          <div class="article-reasoning">Claude Code活用した個別提案資料作成術の標準化・体系化を示す取り組み。業務プロセスへの実装が示されている</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000010.000167010.html" target="_blank" rel="noopener">AI活用型業務プラットフォーム「AWLL Studio」、正式版を提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ オウル</div>
+          <div class="article-reasoning">AI活用型業務プラットフォームの正式版提供開始。生成AIモデルの選定・運用体制が確立され、業務プロセスへの統合が標準化されている段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000003.000182577.html" target="_blank" rel="noopener">DEGIMA AI、AMD Radeon GPUが使える世界初のクラウドサービスをリリース</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ DEGIMA AI, Inc.</div>
+          <div class="article-reasoning">AMD Radeon GPU対応クラウドサービスの提供開始。生成AI基盤としてのインフラ・モデル運用体制が構築・標準化されている段階。</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s3-6">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv3 標準化</span>
+        <span class="tag-axis">生成AIの業務プロセスへの統合</span>
+        <span class="tag-count">10 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000240.000032205.html" target="_blank" rel="noopener">トヨクモ『FormBridge』、AIで回答完了画面を自動生成可能に</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026/5/25 ／ トヨクモ株式会社</div>
+          <div class="article-reasoning">回答完了画面の自動生成は、既存業務プロセスへのAI統合と最適化の初期段階と考えられるため。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000017.000143792.html" target="_blank" rel="noopener">HERPに応募が来ても、面接官の空きが無いとき、結局個別調整に逆戻りしてませんか？──Tasonal、HERPとのAI日程調整連携を大幅強化</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社SAIRAI、HERP</div>
+          <div class="article-reasoning">採用面接の日程調整プロセスにAIを統合し、標準化された業務運用を実現。HERP連携で全体最適化を推進している段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000003.000176284.html" target="_blank" rel="noopener">Techvify、DENSO向け製造DX基盤を正式稼働――プロジェクト管理のデジタル化を実現</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ Techvify、TECHVIFY JAPAN 株式会社、DENSO</div>
+          <div class="article-reasoning">DENSO向けデジタルプロジェクト管理プラットフォームの正式稼働により、プロセスへのAI統合が標準化・体系化された段階にある。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000289.000106428.html" target="_blank" rel="noopener">4名体制で商談化率60%台を実現。トレタがimmedioで夜間・休日の機会損失をゼロへ</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社immedio、株式会社トレタ</div>
+          <div class="article-reasoning">AIインサイドセールスで商談化率向上実現。小規模体制で業務に統合・運用され、定量的成果（60%台）確認される標準化段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000199.000060706.html" target="_blank" rel="noopener">【導入事例】マーケティングAI OS「ENSOR」、株式会社IBJに導入──ディレクター業務の8割を占めていた広告バナー微修正を企画担当者が自走できる体制へ</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ REHATCH株式会社、株式会社IBJ</div>
+          <div class="article-reasoning">マーケティングAI導入により、バナー微修正業務をディレクターから企画担当者に移管し、業務プロセスを再設計した標準化された取り組み</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000066.000073863.html" target="_blank" rel="noopener">「重説4時間を1.6時間に」不動産営業の全業務にAIを実装する、業務分解型eラーニングを提供開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ DXHR株式会社</div>
+          <div class="article-reasoning">不動産営業業務にAI実装し、業務分解型eラーニングで標準化。重説時間を大幅削減した全業務統合の事例</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000122.000015527.html" target="_blank" rel="noopener">応対評価自動化サービス「Dr.Tel」、「導入社数」「利用継続率」など3部門でNo.1を獲得</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社スタジアム、株式会社エクサウィザーズ</div>
+          <div class="article-reasoning">応対評価業務にAIを組み込み、複数企業での導入・継続利用実績あり。業務プロセスへのAI統合が標準化・体系化された段階。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000534.000020202.html" target="_blank" rel="noopener">ボイス型自動対話システム市場でシェア1位を獲得 　～電話応対AIサービス「LINE WORKS AiCall」～</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ LINE WORKS株式会社</div>
+          <div class="article-reasoning">電話応対業務にAI統合。市場シェア1位獲得は標準化・一貫運用段階。ただし顧客企業での導入成熟度は個別</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000299.000022939.html" target="_blank" rel="noopener">【オーロラAIコール】SMS連携アップデート</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社ファブリカホールディングス、株式会社メディア4u</div>
+          <div class="article-reasoning">音声AIエージェントのSMS連携機能追加。業務プロセス（顧客対応）へのAI統合を段階的に拡張。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000090.000079172.html" target="_blank" rel="noopener">不動産ビッグデータプラットフォーム「R.E.DATA」がAI査定システム「参謀くん」と連携開始</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ TRUSTART株式会社</div>
+          <div class="article-reasoning">不動産査定業務にAIを組み込み、ビッグデータと連携した標準化された統合システムを構築・提供している段階</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s4-5">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv4 定量管理</span>
+        <span class="tag-axis">生成AI活用</span>
+        <span class="tag-count">2 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000010.000136172.html" target="_blank" rel="noopener">東大 松尾研発スタートアップ Portus AI、「広告運用代行サービス」の無料モニターを募集。AIスタートアップが大手広告代理店レベルの運用代行を広く提供できる理由とは？</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ Portus AI株式会社</div>
+          <div class="article-reasoning">最先端AI技術による広告運用代行で、高度な生成AI活用と業務プロセス統合を実現。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000094.000019803.html" target="_blank" rel="noopener">AIエージェント対応のチャットサポートシステム「ChatPlus（チャットプラス）」、「ITreview The Best Software in Japan 2026」TOP100選出・50位を獲得</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ チャットプラス株式会社</div>
+          <div class="article-reasoning">AIエージェント対応チャットシステムの開発・運用・評価が定量的に管理されている。業界評価での選出実績示す</div>
+        </div>
+  </section>
+  <section class="detail-section" id="s4-6">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="tag-level">Lv4 定量管理</span>
+        <span class="tag-axis">生成AIの業務プロセスへの統合</span>
+        <span class="tag-count">2 件</span>
+      </div>
+      <a class="back-link" href="#top">▲ 表に戻る</a>
+    </div>
+    
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000005.000175261.html" target="_blank" rel="noopener">「WorkOn」、労務管理、勤怠管理、給与計算の機能を拡充。全ての人事情報を1つのプラットフォーム上で管理し、AIが人事労務業務を一気通貫で支援</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ 株式会社On Technologies、株式会社LegalOn Technologies</div>
+          <div class="article-reasoning">AIエージェントが人事労務業務全体を一気通貫で支援し、複数業務の統合的最適化を実現。</div>
+        </div>
+        <div class="article-card">
+          <div class="article-title">
+            <a href="https://prtimes.jp/main/html/rd/p/000000056.000050107.html" target="_blank" rel="noopener">Scalebase AI Agent 第2弾「Scalebase MCP」を提供開始 生成AIが収益プロセス全体の意思決定と実行を最大化</a>
+          </div>
+          <div class="article-meta">PR TIMES ／ 2026-05-26 ／ Scalebase株式会社</div>
+          <div class="article-reasoning">生成AIエージェントが収益プロセス全体の意思決定・実行を最大化する統合システムで、定量的な効果管理を実施している段階</div>
+        </div>
+  </section>
+
+</body>
+</html>
