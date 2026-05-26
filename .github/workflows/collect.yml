@@ -33,11 +33,14 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python collector.py
 
+      - name: Generate report
+        run: python generate_report.py
+
       - name: Commit and push results
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add data/ report.html
           # 差分がない場合（新規記事ゼロ）はコミットをスキップ
           git diff --cached --quiet || git commit -m "chore: collect articles $(date -u '+%Y-%m-%d')"
           git push
