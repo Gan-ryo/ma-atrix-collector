@@ -22,7 +22,7 @@ import feedparser
 # ─────────────────────────────────────────────────────
 ANTHROPIC_API_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
 CSV_PATH            = Path("data/articles.csv")
-MAX_PER_FEED        = 50   # 1フィードあたりの最大処理件数
+MAX_PER_FEED        = 200   # 1フィードあたりの最大処理件数
 CLAUDE_INTERVAL_SEC = 2.0  # バッチ間のウェイト（APIへの礼儀）
 BATCH_SIZE          = 5    # 1リクエストでまとめて分類する記事数
 RSS_USER_AGENT      = (
