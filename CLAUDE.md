@@ -87,19 +87,42 @@ collector.py
 
 ---
 
+## レポート機能
+
+`generate_report.py` を実行すると `report.html` を生成する。
+
+### 機能
+- **集計表**: 縦＝成熟度レベル（Lv0〜5）× 横＝評価軸（7軸）の件数ヒートマップ
+- **アンカーナビゲーション**: 表の数字をクリックするとページ下部の該当記事セクションへスクロール
+- **記事詳細セクション**: 各セルに対応する記事一覧（タイトル・企業名・判定根拠を表示）
+- **記事リンク**: 各記事タイトルが元記事URLへの直接リンク（新しいタブで開く）
+- **表に戻る**: 各セクション右上の「▲ 表に戻る」で集計表へ戻れる
+
+### 実行方法
+```bash
+python generate_report.py
+# → report.html を出力
+```
+
+---
+
 ## ファイル構成
 
 ```
 ma-atrix-collector/
-├─ CLAUDE.md              # このファイル（要件定義）
-├─ collector.py           # メイン処理
-├─ requirements.txt       # 依存ライブラリ（feedparser, anthropic）
-├─ ma-atrix-def.md        # MA-ATRIXフレームワーク定義
+├─ CLAUDE.md                # このファイル（要件定義）
+├─ collector.py             # メイン処理（定期収集・分類・CSV保存）
+├─ generate_report.py       # レポートHTML生成
+├─ backfill_companies.py    # 企業名バックフィル（スキーマ変更時の補完用）
+├─ check_companies.py       # 企業名欠損チェックユーティリティ
+├─ requirements.txt         # 依存ライブラリ（feedparser, anthropic）
+├─ ma-atrix-def.md          # MA-ATRIXフレームワーク定義
+├─ report.html              # 集計レポート（generate_report.py で生成）
 ├─ data/
-│  └─ articles.csv        # 蓄積データ（自動生成・毎日追記）
+│  └─ articles.csv          # 蓄積データ（自動生成・毎日追記）
 └─ .github/
    └─ workflows/
-      └─ collect.yml      # 定期実行ワークフロー（JST 10:00）
+      └─ collect.yml        # 定期実行ワークフロー（JST 10:00）
 ```
 
 ---
