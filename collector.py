@@ -14,16 +14,17 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
+import anthropic
 import feedparser
-from google import genai
 
 # ─────────────────────────────────────────────────────
 # 設定
 # ─────────────────────────────────────────────────────
-GEMINI_API_KEY      = os.environ.get("GEMINI_API_KEY", "")
+ANTHROPIC_API_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
 CSV_PATH            = Path("data/articles.csv")
-MAX_PER_FEED        = 50   # 1フィードあたりの最大処理件数（Gemini無償枠対策）
-GEMINI_INTERVAL_SEC = 5.0  # 無償枠: gemini-2.5-flash-lite は15RPM ≒ 4秒以上の間隔が必要
+MAX_PER_FEED        = 50   # 1フィードあたりの最大処理件数
+CLAUDE_INTERVAL_SEC = 2.0  # バッチ間のウェイト（APIへの礼儀）
+BATCH_SIZE          = 5    # 1リクエストでまとめて分類する記事数
 RSS_USER_AGENT      = (
     "Mozilla/5.0 (compatible; MA-ATRIX-Collector/1.0; "
     "+https://github.com/Gan-ryo/ma-atrix-collector)"
@@ -69,8 +70,10 @@ HEADERS = [
 
 # ─────────────────────────────────────────────────────
 # MA-ATRIX 分類プロンプト
+#   SYSTEM_PROMPT  → 毎回変わらない定義部分（Claudeのプロンプトキャッシュ対象）
+#   classify_articles_batch() 内でユーザーメッセージに記事を埋め込む
 # ─────────────────────────────────────────────────────
-CLASSIFY_PROMPT = """\
+SYSTEM_PROMPT = """\
 あなたはMA-ATRIXという生成AI活用成熟度フレームワークのアナリストです。
 
 ## MA-ATRIXの評価軸（7軸）
@@ -91,16 +94,18 @@ CLASSIFY_PROMPT = """\
 5: 継続的最適化・迅速な変化対応
 
 ## 指示
-以下の記事を分析し、MA-ATRIXのどの評価軸のどのレベルに相当する取り組みを報告しているか判定してください。
+ユーザーから渡された記事をそれぞれ分析し、MA-ATRIXのどの評価軸のどのレベルに
+相当する取り組みを報告しているか判定してください。
 - 関連する評価軸すべてにレベル（数値）を付与してください
 - 最も主要な評価軸を1つ選んでください
 - 生成AI活用と無関係な記事は not_relevant: true としてください
-- JSONのみを返し、コードブロック記号（```）は不要です
+- 結果はJSON配列として返し、記事の番号順に対応させてください
+- コードブロック記号（```）は不要です
 
-## 出力形式
-{{
+## 各要素の出力形式
+{
   "not_relevant": false,
-  "axes": {{
+  "axes": {
     "組織": null,
     "制度・仕組み": null,
     "コンプライアンス": null,
@@ -108,15 +113,11 @@ CLASSIFY_PROMPT = """\
     "データマネジメント": null,
     "生成AI活用": null,
     "生成AIの業務プロセスへの統合": null
-  }},
+  },
   "primary_axis": "評価軸名",
   "primary_level": 0,
   "reasoning": "判定根拠（80字以内）"
-}}
-
-## 分析対象記事
-タイトル: {title}
-概要: {summary}
+}
 """
 
 
@@ -168,29 +169,64 @@ def fetch_articles(feed: dict) -> list[dict]:
 
 
 # ─────────────────────────────────────────────────────
-# Gemini による MA-ATRIX 分類
+# Claude による MA-ATRIX 分類（バッチ処理 + プロンプトキャッシュ）
 # ─────────────────────────────────────────────────────
-def classify_article(client, article: dict) -> dict | None:
-    """Gemini 1.5 Flash でMA-ATRIX評価軸・レベルを判定する"""
-    prompt = CLASSIFY_PROMPT.format(
-        title=article["title"],
-        summary=article["summary"],
+def classify_articles_batch(client: anthropic.Anthropic, articles: list[dict]) -> list[dict | None]:
+    """複数記事をまとめてClaudeに送り、MA-ATRIX評価軸・レベルを一括判定する。
+
+    システムプロンプト（SYSTEM_PROMPT）はキャッシュされるため、
+    2回目以降のバッチ呼び出しではキャッシュ読み取り料金（約1/10）が適用される。
+
+    戻り値は articles と同じ長さのリスト。分類失敗の要素は None。
+    """
+    articles_text = "\n\n".join(
+        f"### 記事{i + 1}\nタイトル: {a['title']}\n概要: {a['summary']}"
+        for i, a in enumerate(articles)
+    )
+    user_content = (
+        f"{len(articles)}件の記事を分析し、JSON配列で結果を返してください。\n\n"
+        f"## 分析対象記事\n{articles_text}\n\n"
+        "## 出力（JSON配列のみ）"
     )
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=prompt,
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=4096,
+            # SYSTEM_PROMPT は毎回同じ → cache_control でキャッシュ
+            system=[{
+                "type": "text",
+                "text": SYSTEM_PROMPT,
+                "cache_control": {"type": "ephemeral"},
+            }],
+            messages=[{"role": "user", "content": user_content}],
         )
-        raw = response.text.strip()
+
+        # キャッシュ使用状況をデバッグ表示
+        usage = response.usage
+        if hasattr(usage, "cache_read_input_tokens") and usage.cache_read_input_tokens:
+            print(f"    [cache] read={usage.cache_read_input_tokens} / "
+                  f"created={usage.cache_creation_input_tokens}")
+
+        raw = response.content[0].text.strip()
         raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
-        return json.loads(raw)
+        results = json.loads(raw)
+        if not isinstance(results, list):
+            print(f"  [WARN] バッチ結果がリストではありません: {type(results)}")
+            return [None] * len(articles)
+        # 件数が合わない場合は末尾を None で補完
+        while len(results) < len(articles):
+            results.append(None)
+        return results[:len(articles)]
     except json.JSONDecodeError as e:
-        print(f"    [WARN] JSON解析失敗: {e}")
-        return None
+        print(f"  [WARN] バッチJSON解析失敗: {e}")
+        return [None] * len(articles)
+    except anthropic.APIStatusError as e:
+        print(f"  [WARN] Claude APIエラー: {e.status_code} {e.message}")
+        return [None] * len(articles)
     except Exception as e:
-        print(f"    [WARN] Gemini エラー: {e}")
-        return None
+        print(f"  [WARN] Claude バッチエラー: {e}")
+        return [None] * len(articles)
 
 
 # ─────────────────────────────────────────────────────
@@ -247,13 +283,13 @@ def append_row(article: dict, result: dict) -> None:
 def main():
     print(f"=== MA-ATRIX Collector 開始: {datetime.now().isoformat()} ===\n")
 
-    if not GEMINI_API_KEY:
+    if not ANTHROPIC_API_KEY:
         raise RuntimeError(
-            "GEMINI_API_KEY が設定されていません。"
-            "GitHub Secrets に GEMINI_API_KEY を登録してください。"
+            "ANTHROPIC_API_KEY が設定されていません。"
+            "GitHub Secrets に ANTHROPIC_API_KEY を登録してください。"
         )
 
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     existing_ids = load_existing_ids()
     print(f"既存蓄積記事数: {len(existing_ids)} 件\n")
@@ -266,32 +302,37 @@ def main():
         new_articles = [a for a in articles if a["id"] not in existing_ids]
         print(f"  AI関連記事: {len(articles)} 件 / うち新規: {len(new_articles)} 件")
 
-        for article in new_articles:
-            print(f"  ▶ {article['title'][:55]}...")
+        # バッチ単位で分類処理
+        for batch_start in range(0, len(new_articles), BATCH_SIZE):
+            batch = new_articles[batch_start: batch_start + BATCH_SIZE]
+            batch_num = batch_start // BATCH_SIZE + 1
+            total_batches = (len(new_articles) + BATCH_SIZE - 1) // BATCH_SIZE
+            print(f"  [バッチ {batch_num}/{total_batches}] {len(batch)}件を分類中...")
 
-            result = classify_article(client, article)
+            results = classify_articles_batch(client, batch)
 
-            if result is None:
-                print("    → 分類失敗、スキップ")
-                time.sleep(GEMINI_INTERVAL_SEC)
-                continue
+            for article, result in zip(batch, results):
+                print(f"  ▶ {article['title'][:55]}...")
 
-            if result.get("not_relevant"):
-                print("    → MA-ATRIX関連なし、スキップ")
-                time.sleep(GEMINI_INTERVAL_SEC)
-                continue
+                if result is None:
+                    print("    → 分類失敗、スキップ")
+                    continue
 
-            append_row(article, result)
-            existing_ids.add(article["id"])
-            total_new += 1
-            print(
-                f"    → 蓄積完了: "
-                f"主要軸=【{result.get('primary_axis', '?')}】"
-                f" Lv{result.get('primary_level', '?')} "
-                f"| {result.get('reasoning', '')[:40]}"
-            )
+                if result.get("not_relevant"):
+                    print("    → MA-ATRIX関連なし、スキップ")
+                    continue
 
-            time.sleep(GEMINI_INTERVAL_SEC)
+                append_row(article, result)
+                existing_ids.add(article["id"])
+                total_new += 1
+                print(
+                    f"    → 蓄積完了: "
+                    f"主要軸=【{result.get('primary_axis', '?')}】"
+                    f" Lv{result.get('primary_level', '?')} "
+                    f"| {result.get('reasoning', '')[:40]}"
+                )
+
+            time.sleep(CLAUDE_INTERVAL_SEC)
 
         print()
 

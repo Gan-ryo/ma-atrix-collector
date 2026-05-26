@@ -30,7 +30,7 @@ jobs:
 
       - name: Run collector
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python collector.py
 
       - name: Commit and push results
