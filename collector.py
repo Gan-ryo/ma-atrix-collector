@@ -61,7 +61,7 @@ AI_KEYWORDS = [
 # ─────────────────────────────────────────────────────
 HEADERS = [
     "記事ID", "収集日時(UTC)", "ソース", "タイトル", "URL", "公開日",
-    "概要(先頭200字)",
+    "概要(先頭200字)", "企業名",
     "軸1_組織", "軸2_制度仕組み", "軸3_コンプライアンス",
     "軸4_業務プロセス", "軸5_データマネジメント",
     "軸6_生成AI活用", "軸7_業務統合",
@@ -98,6 +98,7 @@ SYSTEM_PROMPT = """\
 相当する取り組みを報告しているか判定してください。
 - 関連する評価軸すべてにレベル（数値）を付与してください
 - 最も主要な評価軸を1つ選んでください
+- 記事に登場する企業名をすべて抽出してください（株式会社・Inc.等の法人格も含める）
 - 生成AI活用と無関係な記事は not_relevant: true としてください
 - 結果はJSON配列として返し、記事の番号順に対応させてください
 - コードブロック記号（```）は不要です
@@ -105,6 +106,7 @@ SYSTEM_PROMPT = """\
 ## 各要素の出力形式
 {
   "not_relevant": false,
+  "companies": ["企業名1", "企業名2"],
   "axes": {
     "組織": null,
     "制度・仕組み": null,
@@ -232,6 +234,29 @@ def classify_articles_batch(client: anthropic.Anthropic, articles: list[dict]) -
 # ─────────────────────────────────────────────────────
 # CSV 操作
 # ─────────────────────────────────────────────────────
+def migrate_csv_schema() -> None:
+    """CSVのヘッダーが現在のHEADERSと異なる場合、列を追加して再書き込みする"""
+    if not CSV_PATH.exists():
+        return
+    with CSV_PATH.open(encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        existing_headers = reader.fieldnames or []
+        if list(existing_headers) == HEADERS:
+            return  # 変更なし
+        rows = list(reader)
+
+    print(f"  [migrate] CSVスキーマを更新します: {set(HEADERS) - set(existing_headers)} を追加")
+    with CSV_PATH.open("w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=HEADERS, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            # 新規列は空文字で補完
+            for col in HEADERS:
+                row.setdefault(col, "")
+            writer.writerow(row)
+    print(f"  [migrate] 完了: {len(rows)} 行を変換しました")
+
+
 def load_existing_ids() -> set[str]:
     """既に蓄積済みの記事IDセットを返す（重複防止）"""
     if not CSV_PATH.exists():
@@ -258,6 +283,7 @@ def append_row(article: dict, result: dict) -> None:
         "URL":                  article["url"],
         "公開日":                article["pub"],
         "概要(先頭200字)":       article["summary"],
+        "企業名":               "、".join(result.get("companies", [])),
         "軸1_組織":             axes.get("組織", ""),
         "軸2_制度仕組み":        axes.get("制度・仕組み", ""),
         "軸3_コンプライアンス":  axes.get("コンプライアンス", ""),
@@ -291,6 +317,7 @@ def main():
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
+    migrate_csv_schema()
     existing_ids = load_existing_ids()
     print(f"既存蓄積記事数: {len(existing_ids)} 件\n")
 
