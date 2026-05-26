@@ -1,8 +1,8 @@
 # MA-ATRIX News Collector
 
 ## プロジェクトの目的
-ニュースリリースサイト（PR TIMES / BusinessWire）から定期的にAI関連記事を抽出し、
-それらがMA-ATRIXのどの評価軸のどのレベルに相当するかの情報を付加して蓄積する。
+ニュースリリースサイト（PR TIMES / PR Newswire）から定期的にAI関連記事を抽出し、
+それらがMA-ATRIXのどの評価軸のどのレベルに相当するかの情報・企業名を付加して蓄積する。
 
 ---
 
@@ -36,10 +36,12 @@
 GitHub Actions（毎日JST 10:00 に定期実行）
     ↓
 collector.py
-    ├─ feedparser  → PR TIMES RSS / BusinessWire RSS 取得
+    ├─ feedparser  → PR TIMES RSS / PR Newswire RSS 取得
     ├─ キーワードフィルタ（AI関連記事のみ抽出）
-    ├─ Gemini 1.5 Flash API → MA-ATRIX評価軸・レベル分類
-    └─ 蓄積先（後述）
+    ├─ Claude API（claude-haiku-4-5）
+    │    ├─ MA-ATRIX評価軸・レベル分類
+    │    └─ 企業名抽出
+    └─ data/articles.csv にコミット・プッシュ
 ```
 
 ### 使用技術・サービス
@@ -47,22 +49,32 @@ collector.py
 |---|---|---|
 | 定期実行 | GitHub Actions | 無償枠内 |
 | RSS取得 | feedparser | 無償 |
-| AI分類 | Gemini 1.5 Flash API | 無償枠: 15RPM / 1,500RPD |
-| 蓄積 | 未定（下記「現在の課題」参照） | |
+| AI分類・企業名抽出 | Claude API（claude-haiku-4-5） | $1.00/$5.00 per 1M tokens、プロンプトキャッシュ対応 |
+| 蓄積 | GitHubリポジトリ（CSV） | `GITHUB_TOKEN` で自動コミット |
+
+### Claude APIの利用方針
+- **バッチ処理**: 5記事/リクエストでまとめて分類（APIコール数を削減）
+- **プロンプトキャッシュ**: システムプロンプトを `cache_control: ephemeral` でキャッシュ。2回目以降のバッチはキャッシュ読み取り料金（約1/10）が適用される
+- **スキーマ自動マイグレーション**: CSV列定義（HEADERS）変更時、起動時に既存CSVを自動変換
 
 ---
 
-## 現在の課題・決定事項
+## CSVの列定義（data/articles.csv）
 
-### Google Sheetsが使えない
-当初はGoogle Sheetsへの蓄積を予定していたが、
-組織のGCP環境で `iam.disableServiceAccountKeyCreation` ポリシーが適用されており、
-サービスアカウントキーの作成が不可。
-
-### 対応方針：GitHubリポジトリにCSVで保存
-- `GITHUB_TOKEN`（Actions自動付与）を使ってCSVをリポジトリにコミット
-- Google Cloud不要、追加Secrets不要（Gemini APIキーのみでよい）
-- **collector.py をCSV保存方式に書き直すのが次のタスク**
+| 列名 | 内容 |
+|---|---|
+| 記事ID | URLのMD5ハッシュ先頭12文字（重複防止キー） |
+| 収集日時(UTC) | 収集実行時刻 |
+| ソース | PR TIMES / PR Newswire |
+| タイトル | 記事タイトル |
+| URL | 記事URL |
+| 公開日 | RSS配信日時 |
+| 概要(先頭200字) | 本文サマリー（HTMLタグ除去済み） |
+| **企業名** | 記事に登場する企業名（`、`区切り） |
+| 軸1_組織 〜 軸7_業務統合 | 各評価軸の成熟度レベル（0〜5、null=非該当） |
+| 主要評価軸 | 最も関連する評価軸名 |
+| 推定レベル | 主要評価軸の成熟度レベル |
+| 判定根拠 | 80字以内の判定説明 |
 
 ---
 
@@ -70,7 +82,7 @@ collector.py
 
 | 変数名 | 内容 |
 |---|---|
-| `GEMINI_API_KEY` | Gemini API キー（必須） |
+| `ANTHROPIC_API_KEY` | Claude API キー（必須） |
 | `GITHUB_TOKEN` | Actions が自動付与するため設定不要 |
 
 ---
@@ -79,21 +91,29 @@ collector.py
 
 ```
 ma-atrix-collector/
-├─ CLAUDE.md              # このファイル
-├─ collector.py           # メイン処理（CSV保存方式に要修正）
-├─ requirements.txt       # 依存ライブラリ
+├─ CLAUDE.md              # このファイル（要件定義）
+├─ collector.py           # メイン処理
+├─ requirements.txt       # 依存ライブラリ（feedparser, anthropic）
 ├─ ma-atrix-def.md        # MA-ATRIXフレームワーク定義
 ├─ data/
-│  └─ articles.csv        # 蓄積データ（自動生成）
+│  └─ articles.csv        # 蓄積データ（自動生成・毎日追記）
 └─ .github/
    └─ workflows/
-      └─ collect.yml      # 定期実行ワークフロー
+      └─ collect.yml      # 定期実行ワークフロー（JST 10:00）
 ```
 
 ---
 
-## 次のタスク
+## 経緯・決定事項
 
-1. `collector.py` の蓄積部分をGoogle Sheets → CSV（リポジトリコミット）に書き直す
-2. `collect.yml` に git commit/push のステップを追加する
-3. ローカルで動作確認してからGitHubにプッシュ
+### Google Sheetsが使えない（解決済み）
+当初はGoogle Sheetsへの蓄積を予定していたが、
+組織のGCP環境で `iam.disableServiceAccountKeyCreation` ポリシーが適用されており、
+サービスアカウントキーの作成が不可。
+→ **GitHubリポジトリにCSVで保存する方式に変更**
+
+### Gemini APIから Claude APIへ移行（解決済み）
+当初はGemini 1.5 Flash APIを使用していたが、無料枠が20RPD（1日20リクエスト）と
+極めて少なく、50件超の記事処理で429エラーが頻発。
+→ **Claude API（claude-haiku-4-5）に移行**。バッチ処理＋プロンプトキャッシュで
+　コスト効率よく運用（$5チャージで半年以上の見込み）
