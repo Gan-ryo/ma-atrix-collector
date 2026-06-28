@@ -56,8 +56,8 @@ def load_articles():
 def build_matrix(rows):
     matrix = defaultdict(list)
     for row in rows:
-        axis  = row.get("主要評価軸", "").strip()
-        level = row.get("推定レベル", "").strip()
+        axis  = (row.get("主要評価軸") or "").strip()
+        level = (row.get("推定レベル") or "").strip()
         if axis in AXES and level.isdigit():
             matrix[(int(level), axis)].append(row)
     return matrix
